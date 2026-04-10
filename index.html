@@ -917,7 +917,7 @@
                             window.showToast("Server GAS sibuk. Mengalihkan ke server Canvas...", true);
                             return await fallbackAPI();
                         }
-                        errorMessage = "Server AI sedang sibuk (High Demand) atau Kuota habis. Silakan coba lagi beberapa saat.";
+                        errorMessage = "Server AI sedang sibuk, silakan coba beberapa saat lagi.";
                     }
                     
                     throw new Error(errorMessage);
