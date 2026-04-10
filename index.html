@@ -497,8 +497,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // KODE ADMIN TELAH DIHAPUS DARI SINI UNTUK KEAMANAN. DIPINDAHKAN KE GOOGLE APPS SCRIPT.
-    
     let characterCount = 0;
     
     let currentUser = null;
@@ -537,10 +535,8 @@
 
     // FUNGSI UNTUK MERESET LAYAR KERJA
     window.resetWorkspace = function() {
-        // Kosongkan semua input teks dan textarea
         document.querySelectorAll('#appContainer input[type="text"], #appContainer input[type="date"], #appContainer textarea').forEach(el => el.value = '');
         
-        // Kembalikan dropdown ke posisi awal
         document.getElementById('draft').selectedIndex = 0;
         document.getElementById('duration').selectedIndex = 0;
         document.getElementById('genre').selectedIndex = 0;
@@ -548,22 +544,18 @@
         document.getElementById('placeSetting').selectedIndex = 0;
         document.getElementById('endingType').selectedIndex = 0;
         
-        // Sembunyikan input custom
         document.getElementById('customTimeInput').classList.add('hidden');
         document.getElementById('customPlaceInput').classList.add('hidden');
 
-        // Reset daftar karakter menjadi 1 karakter utama kosong
         document.getElementById('characterList').innerHTML = '';
         characterCount = 0;
         window.addCharacter(true);
         
-        // Reset preview naskah
         document.getElementById('scriptContent').innerHTML = '';
         document.getElementById('scriptContent').classList.add('hidden');
         document.getElementById('placeholderState').classList.remove('hidden');
         document.getElementById('durationTag').classList.add('hidden');
         
-        // Reset tampilan halaman judul cover
         document.getElementById('title').value = '';
         window.updateTitlePage();
     }
@@ -572,7 +564,6 @@
         currentCustomEmail = email; 
         document.getElementById('authContainer').classList.add('opacity-0');
         
-        // Pastikan workspace benar-benar bersih untuk pengguna yang baru login
         window.resetWorkspace();
         
         setTimeout(() => {
@@ -580,7 +571,6 @@
             document.getElementById('appContainer').classList.remove('hidden');
             document.getElementById('userDisplay').innerText = email;
             
-            // Set tanggal hari ini sebagai default
             document.getElementById('date').valueAsDate = new Date();
             window.updateTitlePage();
             
@@ -639,7 +629,6 @@
         btnSignup.disabled = true;
         loader.classList.remove('hidden');
 
-        // --- BARU: CEK KODE KE GOOGLE APPS SCRIPT SEBELUM MEMBUAT AKUN ---
         if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_ANDA_DI_SINI") {
             window.showToast("Sistem Pendaftaran belum siap. Hubungi Admin.", true);
             btnSignup.disabled = false;
@@ -669,9 +658,7 @@
             loader.classList.add('hidden');
             return;
         }
-        // --- SELESAI CEK KODE ---
         
-        // JIKA KODE BENAR, LANJUTKAN PENDAFTARAN KE FIREBASE
         try {
             await createUserWithEmailAndPassword(auth, email, pass);
             await signOut(auth);
@@ -764,7 +751,6 @@
             document.getElementById('authContainer').classList.remove('hidden');
             document.getElementById('loginForm').reset();
             
-            // HAPUS SISA DATA KETIKAN SAAT KELUAR
             window.resetWorkspace();
             
             setTimeout(() => {
@@ -861,7 +847,10 @@
         const combinedPrompt = `INSTRUKSI SISTEM (WAJIB DIIKUTI):\n${systemPrompt}\n\nINPUT PENGGUNA:\n${userQuery}`;
         const delays = [1000, 2000, 4000, 8000, 16000];
 
-        // Fungsi Fallback untuk mencegah error berlebihan saat backend GAS terkendala otorisasi
+        // Deteksi lingkungan Canvas untuk Fallback cerdas
+        const isCanvas = window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('localhost') || window.location.href.startsWith('blob:');
+
+        // Fungsi Fallback untuk mencegah error berlebihan saat backend GAS terkendala otorisasi / kuota
         const fallbackAPI = async () => {
             console.warn("Menggunakan Mode Pratinjau Canvas sementara...");
             const apiKey = ""; 
@@ -892,12 +881,12 @@
             }
         };
 
-        // 1. JIKA URL GAS KOSONG
         if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_ANDA_DI_SINI") {
-            return await fallbackAPI();
+            if (isCanvas) return await fallbackAPI();
+            throw new Error("URL Google Apps Script belum dikonfigurasi. Masukkan URL Web App Anda di variabel GOOGLE_SCRIPT_URL.");
         }
 
-        // 2. KONEKSI AMAN VIA GOOGLE APPS SCRIPT (Jika URL diisi)
+        // KONEKSI AMAN VIA GOOGLE APPS SCRIPT
         for (let i = 0; i < 5; i++) {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -920,12 +909,15 @@
                     let errorMessage = data.error.message || JSON.stringify(data.error);
                     
                     if (errorMessage.includes("is not found") && errorMessage.includes("models/")) {
-                        errorMessage = "Model AI usang! Buka Google Apps Script Anda, cari baris 'gemini-1.5-flash', ganti menjadi 'gemini-2.5-flash', lalu Deploy Ulang sebagai Versi Baru.";
-                    }
-                    else if (errorMessage.includes("UrlFetchApp.fetch") || errorMessage.includes("otorisasi") || errorMessage.includes("script.external_request")) {
-                        // KARENA SERING TERJADI ERROR OTORISASI, KITA ALIHKAN KE FALLBACK OTOMATIS
-                        window.showToast("Backend belum diotorisasi. Mengalihkan ke mode sementara...", true);
-                        return await fallbackAPI();
+                        errorMessage = "Model AI usang! Buka Google Apps Script Anda, ganti 'gemini-1.5-flash' menjadi 'gemini-2.5-flash', lalu Deploy Ulang.";
+                    } else if (errorMessage.includes("UrlFetchApp.fetch") || errorMessage.includes("otorisasi") || errorMessage.includes("script.external_request")) {
+                        errorMessage = "Otorisasi Backend Diperlukan! Buka Apps Script Anda, jalankan fungsi manual, izinkan, lalu Deploy Ulang.";
+                    } else if (errorMessage.toLowerCase().includes("high demand") || errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota")) {
+                        if (isCanvas) {
+                            window.showToast("Server GAS sibuk. Mengalihkan ke server Canvas...", true);
+                            return await fallbackAPI();
+                        }
+                        errorMessage = "Server AI sedang sibuk (High Demand) atau Kuota habis. Silakan coba lagi beberapa saat.";
                     }
                     
                     throw new Error(errorMessage);
@@ -939,12 +931,12 @@
                 return data;
 
             } catch (error) {
-                // Jangan loop delay jika sudah diarahkan ke fallback
-                if (error.message && error.message.includes("mode sementara")) {
+                // Jika error adalah hasil fallback atau instruksi otorisasi, lemparkan langsung jangan memicu loop
+                if (error.message && (error.message.includes("Server GAS sibuk") || error.message.includes("Otorisasi Backend Diperlukan") || error.message.includes("Mode Pratinjau"))) {
                     throw error;
                 }
                 if (i === 4) {
-                    throw new Error("Gagal terhubung via Backend: " + error.message);
+                    throw new Error("Backend Error: " + error.message);
                 }
                 await new Promise(resolve => setTimeout(resolve, delays[i]));
             }
@@ -979,7 +971,6 @@
         } else if (fieldName.includes('plot')) {
             formatInstruction = "Pertajam narasi struktur plot ini agar elemen ketegangan, kausalitas (sebab-akibat), dan motivasi karakternya jauh lebih masuk akal dan terasa kuat.";
         } else if (fieldName.includes('latar belakang')) {
-            // MENGAMBIL NAMA KARAKTER DARI CARD YANG SAMA
             const charCard = element.closest('.character-card');
             let charName = "Karakter ini";
             if (charCard) {
@@ -1008,8 +999,8 @@
             }
         } catch (error) {
             console.error("Optimize Error:", error);
-            // Jangan tampilkan alert gagal jika pesan aslinya sudah memberi tahu bahwa kita sedang beralih ke mode fallback
-            if (!error.message.includes("mode sementara")) {
+            // Jangan tampilkan alert error mengganggu jika sedang diarahkan ke fallback sementara
+            if (!error.message.includes("Server GAS sibuk")) {
                 window.showToast(`Gagal mengoptimalkan. (${error.message}).`, true);
             }
         } finally {
@@ -1166,7 +1157,7 @@
             let errorMessage = "Gagal terhubung ke server. " + (e.message || "");
 
             // Jangan timpa tampilan error jika itu hanyalah notifikasi fallback yang sedang berjalan ulang
-            if (e.message && e.message.includes("mode sementara")) {
+            if (e.message && e.message.includes("Server GAS sibuk")) {
                return; 
             }
 
@@ -1193,7 +1184,6 @@
 
         lines.forEach(line => {
             let trimmed = line.trim();
-            // Bersihkan format markdown (seperti bintang/bold dari AI)
             trimmed = trimmed.replace(/^>\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '');
 
             if (!trimmed) {
@@ -1202,7 +1192,6 @@
                 return;
             }
 
-            // PERBAIKAN: Hapus angka otomatis dari AI agar deteksi Scene akurat
             let cleanScene = trimmed.replace(/^\d+\.\s*/, '');
 
             if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|INT |EXT )/i.test(cleanScene)) {
