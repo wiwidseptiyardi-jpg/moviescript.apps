@@ -861,10 +861,7 @@
         const combinedPrompt = `INSTRUKSI SISTEM (WAJIB DIIKUTI):\n${systemPrompt}\n\nINPUT PENGGUNA:\n${userQuery}`;
         const delays = [1000, 2000, 4000, 8000, 16000];
 
-        // Deteksi lingkungan Canvas untuk Fallback cerdas
-        const isCanvas = window.location.href.includes('googleusercontent.com') || window.location.href.includes('localhost') || window.location.href.startsWith('blob:');
-
-        // Fungsi Fallback untuk mencegah error berlebihan saat backend GAS terkendala otorisasi / kuota
+        // Fungsi Fallback untuk mencegah error berlebihan saat backend GAS terkendala otorisasi
         const fallbackAPI = async () => {
             console.warn("Menggunakan Mode Pratinjau Canvas sementara...");
             const apiKey = ""; 
@@ -895,12 +892,12 @@
             }
         };
 
+        // 1. JIKA URL GAS KOSONG
         if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_ANDA_DI_SINI") {
-            if (isCanvas) return await fallbackAPI();
-            throw new Error("URL Google Apps Script belum dikonfigurasi.");
+            return await fallbackAPI();
         }
 
-        // KONEKSI AMAN VIA GOOGLE APPS SCRIPT
+        // 2. KONEKSI AMAN VIA GOOGLE APPS SCRIPT (Jika URL diisi)
         for (let i = 0; i < 5; i++) {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -926,14 +923,9 @@
                         errorMessage = "Model AI usang! Buka Google Apps Script Anda, cari baris 'gemini-1.5-flash', ganti menjadi 'gemini-2.5-flash', lalu Deploy Ulang sebagai Versi Baru.";
                     }
                     else if (errorMessage.includes("UrlFetchApp.fetch") || errorMessage.includes("otorisasi") || errorMessage.includes("script.external_request")) {
-                        errorMessage = "Otorisasi Backend Diperlukan! Buka Apps Script Anda, jalankan fungsi pancingOtorisasi manual, izinkan, lalu Deploy Ulang.";
-                    }
-                    else if (errorMessage.toLowerCase().includes("high demand") || errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota")) {
-                        if (isCanvas) {
-                            window.showToast("Server utama sibuk. Mengalihkan ke server Canvas...", true);
-                            return await fallbackAPI();
-                        }
-                        errorMessage = "Server AI sedang sibuk (High Demand) atau Kuota habis. Silakan coba lagi beberapa saat.";
+                        // KARENA SERING TERJADI ERROR OTORISASI, KITA ALIHKAN KE FALLBACK OTOMATIS
+                        window.showToast("Backend belum diotorisasi. Mengalihkan ke mode sementara...", true);
+                        return await fallbackAPI();
                     }
                     
                     throw new Error(errorMessage);
@@ -947,12 +939,12 @@
                 return data;
 
             } catch (error) {
-                // Jangan loop delay jika sudah diarahkan ke fallback Canvas
-                if (error.message && (error.message.includes("Gagal terhubung ke AI (Mode Pratinjau)") || error.message.includes("Server utama sibuk"))) {
+                // Jangan loop delay jika sudah diarahkan ke fallback
+                if (error.message && error.message.includes("mode sementara")) {
                     throw error;
                 }
                 if (i === 4) {
-                    throw new Error(error.message);
+                    throw new Error("Gagal terhubung via Backend: " + error.message);
                 }
                 await new Promise(resolve => setTimeout(resolve, delays[i]));
             }
@@ -1017,7 +1009,7 @@
         } catch (error) {
             console.error("Optimize Error:", error);
             // Jangan tampilkan alert gagal jika pesan aslinya sudah memberi tahu bahwa kita sedang beralih ke mode fallback
-            if (!error.message.includes("Server utama sibuk")) {
+            if (!error.message.includes("mode sementara")) {
                 window.showToast(`Gagal mengoptimalkan. (${error.message}).`, true);
             }
         } finally {
@@ -1174,7 +1166,7 @@
             let errorMessage = "Gagal terhubung ke server. " + (e.message || "");
 
             // Jangan timpa tampilan error jika itu hanyalah notifikasi fallback yang sedang berjalan ulang
-            if (e.message && e.message.includes("Server utama sibuk")) {
+            if (e.message && e.message.includes("mode sementara")) {
                return; 
             }
 
