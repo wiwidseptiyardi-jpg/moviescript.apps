@@ -12,55 +12,103 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        
+        /* STANDAR FORMAT NASKAH HOLLYWOOD COURIER PRIME */
         .script-font {
             font-family: 'Courier Prime', monospace;
-            line-height: 1.0; 
-            white-space: pre-wrap; 
+            line-height: 1.2; 
         }
         .script-page {
             background: white;
-            width: 210mm; 
+            width: 210mm; /* Kertas A4 */
             min-height: 297mm; 
-            padding: 2.54cm; 
+            padding: 2.54cm; /* Margin Preview Web Seragam */
             margin: 0 auto 2rem auto; 
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             color: #000;
             font-size: 12pt;
             position: relative;
+            box-sizing: border-box;
         }
+
+        /* --- MODE KHUSUS PDF (ANTI POTONG & TATA LETAK MENGALIR ALAMI) --- */
+        .pdf-download-mode {
+            /* Lebar Kertas A4 (210) dikurangi Margin Kiri (25.4) & Margin Kanan (25.4) = 159.2mm */
+            width: 159.2mm !important; 
+            max-width: 159.2mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+        }
+        .pdf-download-mode .script-page {
+            width: 159.2mm !important;
+            max-width: 159.2mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            /* Membiarkan tinggi berjalan alami agar tidak ada ruang kosong yang bentrok dengan margin */
+            min-height: auto !important;
+            height: auto !important; 
+        }
+
         .title-page-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 250mm; 
-            text-align: center;
+            width: 100%;
+            display: block;
         }
+
+        /* Memaksa elemen baris pertama di halaman naskah (Halaman 2) untuk mutlak menempel di atas */
+        #scriptContent > div:first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+        
+        /* ALIGNMENT & SPACING ELEMENT NASKAH (STANDAR HOLLYWOOD) */
+        /* Penambahan 'page-break-inside: avoid' mutlak agar teks tidak terpotong di batas bawah */
+        .scene-heading, .action-line, .character-name, .parenthetical, .dialogue {
+            page-break-inside: avoid !important;
+        }
+        
         .scene-heading {
             font-weight: bold;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
             text-transform: uppercase;
-            text-align: left;
+            text-align: left !important;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            page-break-after: avoid !important;
+        }
+        .action-line {
+            text-align: left !important;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
         }
         .character-name {
-            text-align: center;
+            text-align: center !important;
             margin-top: 1rem;
-            width: 60%;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .dialogue {
-            text-align: center;
-            width: 70%;
-            margin-left: auto;
-            margin-right: auto;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0;
+            width: 50%;
+            margin-left: 25%;
+            font-weight: bold;
+            text-transform: uppercase;
+            page-break-after: avoid !important;
         }
         .parenthetical {
-            text-align: center;
-            font-size: 11pt;
-            margin-bottom: 0.2rem;
+            text-align: left !important;
+            width: 40%;
+            margin-left: 30%;
+            margin-top: 0;
+            margin-bottom: 0;
         }
+        .dialogue {
+            text-align: left !important;
+            width: 60%;
+            margin-left: 20%;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
         .loader {
             border: 3px solid #f3f3f3;
             border-radius: 50%;
@@ -419,27 +467,35 @@
             
             <div class="overflow-y-auto bg-slate-300 p-4 border-x border-b border-slate-300 h-full">
                 <div id="printArea">
+                    
+                    <!-- TATA LETAK COVER BARU (MENGALIR ALAMI SESUAI PERMINTAAN) -->
                     <div id="titlePage" class="script-page script-font">
                         <div class="title-page-container">
-                            <div class="mt-20">
-                                <h1 id="dispTitle" class="text-2xl font-bold uppercase mb-4">JUDUL FILM</h1>
-                                <p class="mb-2">By</p>
-                                <p id="dispAuthor" class="font-bold">Nama Penulis</p>
+                            
+                            <!-- BAGIAN ATAS: Menempel mutlak di garis margin 0 atas tanpa rongga -->
+                            <div style="width: 100%; text-align: center; margin: 0; padding: 0;"> 
+                                <h1 id="dispTitle" style="font-size: 24pt; font-weight: bold; text-transform: uppercase; margin: 0; padding: 0; line-height: 1;">JUDUL FILM</h1>
+                                <p style="margin: 20px 0 5px 0; padding: 0; font-size: 12pt;">By</p>
+                                <p id="dispAuthor" style="font-weight: bold; margin: 0; padding: 0; font-size: 12pt;">Nama Penulis</p>
                             </div>
                             
-                            <div class="flex flex-col justify-center items-center flex-grow">
-                                <p id="dispDraftInfo" class="italic">#DRAFT 1: [Tanggal]</p>
+                            <!-- BAGIAN TENGAH -->
+                            <div style="width: 100%; text-align: center; margin-top: 100px;">
+                                <p id="dispDraftInfo" style="font-style: italic; margin: 0; padding: 0; font-size: 12pt;">#DRAFT 1: [Tanggal]</p>
                             </div>
 
-                            <div class="flex justify-between items-end w-full mb-10">
-                                <div class="text-left max-w-[40%]">
-                                    <p id="dispProd" class="uppercase font-bold">RUMAH PRODUKSI</p>
-                                    <p id="dispCopyright" class="text-xs mt-1">@2024</p>
+                            <!-- BAGIAN BAWAH -->
+                            <div style="width: 100%; font-size: 12pt; margin-top: 150px;">
+                                <div style="float: left; text-align: left;">
+                                    <p id="dispProd" style="text-transform: uppercase; font-weight: bold; margin: 0; padding: 0;">RUMAH PRODUKSI</p>
+                                    <p id="dispCopyright" style="font-size: 10pt; margin: 5px 0 0 0; padding: 0;">@2024</p>
                                 </div>
-                                <div class="text-right max-w-[40%]">
-                                    <p id="dispContact">Kontak</p>
+                                <div style="float: right; text-align: right;">
+                                    <p id="dispContact" style="margin: 0; padding: 0;">Kontak</p>
                                 </div>
+                                <div style="clear: both;"></div>
                             </div>
+
                         </div>
                     </div>
 
@@ -481,7 +537,6 @@
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // PENTING: Ganti dengan URL Google Apps Script Anda (Langkah 1)
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKDubAgUlYyXL5kdda0z4qTSeReuuScmUas2jKIFfkDanNopuaGzUHeoH7KJaoEgT-RA/exec";
 
     const firebaseConfig = {
@@ -498,7 +553,6 @@
     const db = getFirestore(app);
 
     let characterCount = 0;
-    
     let currentUser = null;
     let currentCustomEmail = null;
 
@@ -509,9 +563,6 @@
         }
     });
 
-    // ==========================================
-    // GLOBAL UI FUNCTIONS
-    // ==========================================
     window.showToast = function(message, isError = false) {
         const toast = document.getElementById('toast');
         toast.innerHTML = message;
@@ -533,7 +584,6 @@
         document.getElementById(viewId).classList.remove('hidden');
     }
 
-    // FUNGSI UNTUK MERESET LAYAR KERJA
     window.resetWorkspace = function() {
         document.querySelectorAll('#appContainer input[type="text"], #appContainer input[type="date"], #appContainer textarea').forEach(el => el.value = '');
         
@@ -764,9 +814,6 @@
         }
     }
 
-    // ==========================================
-    // BAGIAN 3: LOGIC APLIKASI MOVIE SCRIPT
-    // ==========================================
     window.toggleCustom = function(selectId, inputId) {
         const select = document.getElementById(selectId);
         const input = document.getElementById(inputId);
@@ -842,15 +889,11 @@
         document.getElementById(`char-${id}`).remove();
     }
 
-    // --- MENGGUNAKAN PROXY GOOGLE APPS SCRIPT UNTUK AI YANG AMAN ---
     async function fetchGeminiAPI(userQuery, systemPrompt) {
         const combinedPrompt = `INSTRUKSI SISTEM (WAJIB DIIKUTI):\n${systemPrompt}\n\nINPUT PENGGUNA:\n${userQuery}`;
         const delays = [1000, 2000, 4000, 8000, 16000];
-
-        // Deteksi lingkungan Canvas untuk Fallback cerdas
         const isCanvas = window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('localhost') || window.location.href.startsWith('blob:');
 
-        // Fungsi Fallback untuk mencegah error berlebihan saat backend GAS terkendala otorisasi / kuota
         const fallbackAPI = async () => {
             console.warn("Menggunakan Mode Pratinjau Canvas sementara...");
             const apiKey = ""; 
@@ -865,12 +908,10 @@
                             contents: [{ parts: [{ text: combinedPrompt }] }]
                         })
                     });
-                    
                     if (!response.ok) {
                         const errText = await response.text();
                         throw new Error(`HTTP Error ${response.status}: ${errText}`);
                     }
-                    
                     return await response.json();
                 } catch (error) {
                     if (i === 4 || (error.status && error.status >= 400 && error.status <= 404)) {
@@ -886,7 +927,7 @@
             throw new Error("URL Google Apps Script belum dikonfigurasi. Masukkan URL Web App Anda di variabel GOOGLE_SCRIPT_URL.");
         }
 
-        // KONEKSI AMAN VIA GOOGLE APPS SCRIPT
+        let lastErrorMessage = "";
         for (let i = 0; i < 5; i++) {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -901,25 +942,17 @@
                 if (!response.ok) {
                     throw new Error(`HTTP Error ${response.status} dari Backend GAS Anda.`);
                 }
-                
                 const data = await response.json();
 
-                // Cek jika ada error dari Apps Script atau dari API Gemini di dalam Apps Script
                 if (data.error && !data.candidates) {
                     let errorMessage = data.error.message || JSON.stringify(data.error);
-                    
                     if (errorMessage.includes("is not found") && errorMessage.includes("models/")) {
-                        errorMessage = "Model AI usang! Buka Google Apps Script Anda, ganti 'gemini-1.5-flash' menjadi 'gemini-2.5-flash', lalu Deploy Ulang.";
+                        throw new Error("Model AI usang! Buka Google Apps Script Anda, ganti 'gemini-1.5-flash' menjadi 'gemini-2.5-flash', lalu Deploy Ulang.");
                     } else if (errorMessage.includes("UrlFetchApp.fetch") || errorMessage.includes("otorisasi") || errorMessage.includes("script.external_request")) {
-                        errorMessage = "Otorisasi Backend Diperlukan! Buka Apps Script Anda, jalankan fungsi manual, izinkan, lalu Deploy Ulang.";
+                        throw new Error("Otorisasi Backend Diperlukan! Buka Apps Script Anda, jalankan fungsi manual, izinkan, lalu Deploy Ulang.");
                     } else if (errorMessage.toLowerCase().includes("high demand") || errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota")) {
-                        if (isCanvas) {
-                            window.showToast("Server GAS sibuk. Mengalihkan ke server Canvas...", true);
-                            return await fallbackAPI();
-                        }
-                        errorMessage = "Server AI sedang sibuk, silakan coba beberapa saat lagi.";
+                        throw new Error("Server AI sedang sibuk (High Demand) atau Kuota habis.");
                     }
-                    
                     throw new Error(errorMessage);
                 }
 
@@ -927,23 +960,28 @@
                     console.error("Respon tidak valid:", data);
                     throw new Error("Google Apps Script mengembalikan format data yang tidak dikenali.");
                 }
-
                 return data;
 
             } catch (error) {
-                // Jika error adalah hasil fallback atau instruksi otorisasi, lemparkan langsung jangan memicu loop
-                if (error.message && (error.message.includes("Server GAS sibuk") || error.message.includes("Otorisasi Backend Diperlukan") || error.message.includes("Mode Pratinjau"))) {
+                lastErrorMessage = error.message;
+                if (lastErrorMessage.includes("Otorisasi Backend Diperlukan") || lastErrorMessage.includes("Model AI usang")) {
                     throw error;
                 }
                 if (i === 4) {
-                    throw new Error("Backend Error: " + error.message);
+                    if (lastErrorMessage.includes("Server AI sedang sibuk")) {
+                        if (isCanvas) {
+                             console.warn("GAS limit tercapai, mengalihkan ke fallback Canvas...");
+                             return await fallbackAPI();
+                        }
+                        throw new Error("Server AI masih sibuk setelah 5x percobaan. Silakan tunggu 1-2 menit lalu coba lagi.");
+                    }
+                    throw new Error("Backend Error: " + lastErrorMessage);
                 }
                 await new Promise(resolve => setTimeout(resolve, delays[i]));
             }
         }
     }
 
-    // --- LOGIKA OPTIMASI TEKS DENGAN AI (SCRIPT DOCTOR) ---
     window.optimizeField = async function(elementId, fieldName) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -957,7 +995,6 @@
         const btn = document.getElementById(`btn-opt-${elementId}`);
         const originalBtnHTML = btn.innerHTML;
         btn.disabled = true;
-        
         btn.innerHTML = `<svg class="animate-spin h-3 w-3 mr-1 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI...`;
 
         const genre = document.getElementById('genre').value || "Umum";
@@ -983,13 +1020,11 @@
         }
 
         const systemPrompt = `Anda adalah "Script Doctor" / konsultan naskah film profesional Hollywood.\nTUGAS ANDA: Mengoptimalkan ide kasar dari pengguna menjadi narasi film yang jauh lebih baik, logis, dan sinematik.\n\nATURAN MUTLAK:\n1. JANGAN tambahkan teks pengantar atau penutup (seperti "Berikut adalah hasilnya:" atau "Tentu, ini dia").\n2. LANGSUNG berikan teks murni hasil optimasi saja.\n3. Perbaiki ejaan dan tata bahasa menjadi bahasa Indonesia yang baku, kaya kosa kata, namun tetap luwes untuk skenario.`;
-        
         const userQuery = `OPTIMALKAN IDE BERIKUT!\n\nElemen Naskah: [${fieldName}]\nGenre Film: [${genre}]\nTema: [${theme}]\n\nIDE KASAR AWAL:\n"${originalText}"\n\nINSTRUKSI FORMATTING:\n${formatInstruction}`;
 
         try {
             const data = await fetchGeminiAPI(userQuery, systemPrompt);
             let optimizedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            
             if (optimizedText) {
                 optimizedText = optimizedText.trim().replace(/^"|"$/g, '').trim();
                 element.value = optimizedText;
@@ -999,8 +1034,7 @@
             }
         } catch (error) {
             console.error("Optimize Error:", error);
-            // Jangan tampilkan alert error mengganggu jika sedang diarahkan ke fallback sementara
-            if (!error.message.includes("Server GAS sibuk")) {
+            if (!error.message.includes("Server GAS sibuk") && !error.message.includes("Mode Pratinjau")) {
                 window.showToast(`Gagal mengoptimalkan. (${error.message}).`, true);
             }
         } finally {
@@ -1156,7 +1190,6 @@
             console.error("Generate Error:", e);
             let errorMessage = "Gagal terhubung ke server. " + (e.message || "");
 
-            // Jangan timpa tampilan error jika itu hanyalah notifikasi fallback yang sedang berjalan ulang
             if (e.message && e.message.includes("Server GAS sibuk")) {
                return; 
             }
@@ -1181,40 +1214,43 @@
         let html = '';
         let sceneCount = 0;
         let lastLineType = 'none'; 
+        let isFirstElement = true;
 
         lines.forEach(line => {
             let trimmed = line.trim();
             trimmed = trimmed.replace(/^>\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '');
+            trimmed = trimmed.replace(/\s{2,}/g, ' '); 
 
             if (!trimmed) {
-                html += '<br>';
                 lastLineType = 'none';
                 return;
             }
+
+            // Membunuh margin atas secara mutlak pada baris tulisan naskah yang paling pertama
+            let mt0 = isFirstElement ? ' style="margin-top: 0 !important; padding-top: 0 !important;"' : '';
+            isFirstElement = false;
 
             let cleanScene = trimmed.replace(/^\d+\.\s*/, '');
 
             if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|INT |EXT )/i.test(cleanScene)) {
                 sceneCount++;
-                html += `<div class="scene-heading mt-6 mb-2 pt-4 text-left">
-                            <span>${sceneCount}. ${cleanScene.toUpperCase()}</span>
-                         </div>`;
+                html += `<div class="scene-heading"${mt0}>${sceneCount}. ${cleanScene.toUpperCase()}</div>`;
                 lastLineType = 'scene';
             } 
-            else if (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && !trimmed.match(/[a-z]/) && !trimmed.includes(' - ') && trimmed.length > 1) {
-                html += `<div class="character-name font-bold mt-4">${trimmed}</div>`;
+            else if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && !trimmed.match(/[a-z]/) && !trimmed.includes(' - ') && trimmed.length > 1) {
+                html += `<div class="character-name"${mt0}>${trimmed}</div>`;
                 lastLineType = 'char';
             }
             else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
-                html += `<div class="parenthetical">${trimmed}</div>`;
+                html += `<div class="parenthetical"${mt0}>${trimmed}</div>`;
                 lastLineType = 'char'; 
             }
             else if (lastLineType === 'char' || lastLineType === 'dialogue') {
-                html += `<div class="dialogue mb-2">${trimmed}</div>`;
+                html += `<div class="dialogue"${mt0}>${trimmed}</div>`;
                 lastLineType = 'dialogue';
             }
             else {
-                html += `<div class="text-left mb-2">${trimmed}</div>`;
+                html += `<div class="action-line"${mt0}>${trimmed}</div>`;
                 lastLineType = 'action';
             }
         });
@@ -1224,17 +1260,69 @@
     window.downloadPDF = function() {
         const element = document.getElementById('printArea');
         const title = document.getElementById('title').value || "Naskah";
+        const titleContainer = document.querySelector('.title-page-container');
         
+        // Simpan style inline asli untuk dikembalikan nanti
+        const origPrintAreaStyle = element.getAttribute('style') || '';
+        const origContainerStyle = titleContainer.getAttribute('style') || '';
+        const pages = element.querySelectorAll('.script-page');
+        const origStyles = [];
+
+        element.classList.add('pdf-download-mode');
+        
+        pages.forEach((p, index) => {
+            origStyles[index] = p.getAttribute('style') || '';
+            p.style.setProperty('width', '159.2mm', 'important'); 
+        });
+
+        // Kunci Cover dengan tinggi 235mm (Lebih aman dari batas atas & bawah margin)
+        titleContainer.style.setProperty('height', '235mm', 'important');
+
         const opt = {
-            margin:       0,
+            // Margin Mutlak Seragam Semua Sisi = 25.4 mm (2,54 cm)
+            margin:       [25.4, 25.4, 25.4, 25.4], 
             filename:     `${title.replace(/\s+/g, '_')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            image:        { type: 'jpeg', quality: 1 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            // Mencegah elemen terbelah (anti potong bawah) & otomatis pisah sebelum Naskah
+            pagebreak:    { mode: ['css', 'avoid-all'], before: '#scriptContent' } 
         };
 
-        html2pdf().set(opt).from(element).save();
         window.showToast("PDF sedang diproses dan diunduh...");
+        
+        // Mencegat proses jsPDF untuk menyisipkan nomor halaman
+        html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+            const totalPages = pdf.internal.getNumberOfPages();
+            
+            // Set font untuk penomoran sama seperti naskah (Courier)
+            pdf.setFont('courier', 'normal');
+            pdf.setFontSize(12);
+            
+            // Memulai penomoran dari i=2 (halaman setelah cover), nomor halamannya dihitung mulai 1
+            for (let i = 2; i <= totalPages; i++) {
+                pdf.setPage(i);
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                
+                // Halaman fisik 2 = Angka "1."
+                const pageNumberText = (i - 1).toString() + ".";
+                
+                // Koordinat X: 210mm - Margin Kanan 25.4mm = 184.6mm
+                // Koordinat Y: 297mm - Margin Bawah 12.7mm = 284.3mm (Tepat di tengah margin bawah)
+                pdf.text(pageNumberText, pageWidth - 25.4, pageHeight - 12.7, { align: 'right' });
+            }
+        }).save().then(() => {
+            // Mengembalikan style web seperti semula setelah PDF sukses dibuat
+            element.classList.remove('pdf-download-mode');
+            element.setAttribute('style', origPrintAreaStyle);
+            titleContainer.setAttribute('style', origContainerStyle);
+            
+            pages.forEach((p, index) => {
+                p.setAttribute('style', origStyles[index]);
+            });
+        });
     }
 
     window.downloadFDX = function() {
@@ -1272,9 +1360,6 @@
         }
     }
 
-    // ==========================================
-    // BAGIAN 4: LOGIC HISTORY (RIWAYAT NASKAH)
-    // ==========================================
     let userHistory = [];
 
     window.openHistoryModal = async function() {
@@ -1337,19 +1422,15 @@
         const item = userHistory.find(h => h.id === id);
         if (!item) return;
 
-        // Reset workspace terlebih dahulu agar bersih sebelum memuat data
         window.resetWorkspace();
-
         document.getElementById('scriptContent').innerHTML = item.scriptHTML;
         document.getElementById('scriptContent').classList.remove('hidden');
         document.getElementById('placeholderState').classList.add('hidden');
         document.getElementById('durValue').innerText = item.wordCount;
         document.getElementById('durationTag').classList.remove('hidden');
 
-        // Mengatur ulang title dari history ke form
         document.getElementById('title').value = item.title || 'Naskah Tanpa Judul';
         window.updateTitlePage();
-
         window.closeHistoryModal();
         window.showToast("Naskah berhasil dimuat dari riwayat.", false);
     }
