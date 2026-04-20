@@ -208,9 +208,13 @@
             <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
                 <span class="w-1.5 h-4 bg-yellow-500 rounded-sm shadow-[0_0_8px_rgba(234,179,8,0.8)]"></span> SYSTEM RECOVERY
             </h2>
-            <p class="text-[10px] text-slate-400 mb-5 leading-relaxed">Silakan hubungi administrator Anda untuk melakukan pengaturan ulang sandi.</p>
+            <p class="text-[10px] text-slate-400 mb-5 leading-relaxed">Sistem akan mengirimkan protokol pengaturan ulang sandi ke email Anda.</p>
             <form id="forgotForm" onsubmit="handleForgot(event)" class="space-y-4">
-                <a href="https://wa.me/6287838960454?text=Halo%20Admin,%20saya%20lupa%20password%20MovieScript.AI%20saya." target="_blank" class="block w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white text-center font-bold py-3.5 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] hover:shadow-[0_0_25px_rgba(234,179,8,0.6)] transition tracking-widest text-xs">HUBUNGI ADMIN</a>
+                <div>
+                    <label class="block text-[9px] font-bold text-yellow-500/80 uppercase mb-1 tracking-wider">Email Terdaftar</label>
+                    <input type="email" id="forgotEmail" required class="w-full p-3 bg-slate-950/50 border border-slate-700/80 rounded-xl outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition text-sm text-white placeholder-slate-600">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white font-bold py-3.5 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] hover:shadow-[0_0_25px_rgba(234,179,8,0.6)] transition tracking-widest text-xs">KIRIM PROTOKOL</button>
             </form>
             <p class="text-center text-[10px] text-slate-400 mt-6 uppercase tracking-wider">
                 Ingat Password Anda? <button onclick="switchView('loginView')" class="font-bold text-yellow-400 hover:text-yellow-300 border-b border-yellow-400/30 pb-0.5 ml-1">Batal Recover</button>
@@ -525,23 +529,39 @@
     Pesan Notifikasi
 </div>
 
-<script>
+<script type="module">
     // ==========================================
-    // MENGHAPUS FIREBASE DAN MENGGUNAKAN LOCALSTORAGE
+    // IMPORTS & SETUP FIREBASE
     // ==========================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // PENTING: Ganti dengan URL Google Apps Script Anda
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKDubAgUlYyXL5kdda0z4qTSeReuuScmUas2jKIFfkDanNopuaGzUHeoH7KJaoEgT-RA/exec";
 
+    // PENTING: MASUKKAN API KEY FIREBASE ANDA DI SINI UNTUK MENGHINDARI ERROR LOGIN
+    const firebaseConfig = {
+  apiKey: "AIzaSyBv2W26CoAOpxqFD0te83GoUm6sh5bQ3ro",
+  authDomain: "movie-script-925d3.firebaseapp.com",
+  projectId: "movie-script-925d3",
+  storageBucket: "movie-script-925d3.firebasestorage.app",
+  messagingSenderId: "405897726844",
+  appId: "1:405897726844:web:78539bbcdcaefe2477b2f9"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     let characterCount = 0;
     let currentUser = null;
+    let currentCustomEmail = null;
 
-    // Cek status login saat halaman dimuat
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedUser = localStorage.getItem('ms_currentUser');
-        if (savedUser) {
-            currentUser = savedUser;
-            window.loginSuccess(savedUser);
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (user) {
+            currentCustomEmail = user.email;
         }
     });
 
@@ -593,9 +613,7 @@
     }
 
     window.loginSuccess = function(email) {
-        currentUser = email; 
-        localStorage.setItem('ms_currentUser', email);
-
+        currentCustomEmail = email; 
         document.getElementById('authContainer').classList.add('opacity-0');
         
         window.resetWorkspace();
@@ -623,7 +641,7 @@
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPass').value;
         
-        // Mode Admin
+        // Bypass Admin
         if (email === "admin@moviescript.ai" && pass === "admin") {
             window.loginSuccess(email);
             btnLogin.disabled = false;
@@ -631,18 +649,22 @@
             return;
         }
 
-        // Cek pengguna di localStorage
-        let users = JSON.parse(localStorage.getItem('ms_users') || '[]');
-        let user = users.find(u => u.email === email && u.password === pass);
-
-        if (user) {
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
             window.loginSuccess(email);
-        } else {
-            window.showToast("Email atau password salah! Atau Anda belum mendaftar.", true);
+        } catch (error) {
+            console.error("Login Error:", error);
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                window.showToast("Email atau password salah!", true);
+            } else if (error.code === 'auth/api-key-not-valid') {
+                window.showToast("API Key Firebase tidak valid. Harap perbarui kode Anda.", true);
+            } else {
+                window.showToast("Gagal login: " + error.message, true);
+            }
+        } finally {
+            btnLogin.disabled = false;
+            loader.classList.add('hidden');
         }
-
-        btnLogin.disabled = false;
-        loader.classList.add('hidden');
     }
 
     window.handleSignup = async function(e) {
@@ -670,7 +692,6 @@
         }
 
         try {
-            // 1. Verifikasi kode
             const verifyResponse = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -684,23 +705,32 @@
                 loader.classList.add('hidden');
                 return;
             }
+        } catch (err) {
+            console.error("Verifikasi Error:", err);
+            window.showToast("Gagal memverifikasi kode ke server.", true);
+            btnSignup.disabled = false;
+            loader.classList.add('hidden');
+            return;
+        }
+        
+        try {
+            // 1. Daftarkan dan otentikasi user
+            await createUserWithEmailAndPassword(auth, email, pass);
 
-            // 2. Cek apakah email sudah ada di local storage
-            let users = JSON.parse(localStorage.getItem('ms_users') || '[]');
-            if (users.find(u => u.email === email)) {
-                window.showToast("Email sudah terdaftar, silakan login!", true);
-                btnSignup.disabled = false;
-                loader.classList.add('hidden');
-                return;
-            }
-
-            // 3. Simpan ke local storage
-            users.push({ email: email, password: pass });
-            localStorage.setItem('ms_users', JSON.stringify(users));
-
-            // 4. Rekap ke Google Sheets
+            // PERBAIKAN KEAMANAN: Jangan Sign-out dulu! Kita butuh status 'Login' untuk menulis ke Database
             const uniqueId = 'MSP-' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
             const currentDate = new Date().toISOString();
+
+            // 2. Tulis data ke Firestore (Hanya menyimpan email, JANGAN menyimpan password di database!)
+            const usersRef = collection(db, 'registeredUsers');
+            await addDoc(usersRef, {
+                uid: uniqueId,
+                email: email,
+                createdAt: currentDate
+            });
+
+            // 3. Setelah database berhasil ditulis dengan aman, BARU kita Sign-out
+            await signOut(auth);
 
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
@@ -715,16 +745,22 @@
                     })
                 });
             } catch (sheetError) {
-                console.error("Peringatan: Gagal merekap ke Google Sheets, tapi pendaftaran lokal berhasil.", sheetError);
+                console.error("Gagal merekap ke Google Sheets:", sheetError);
             }
             
             window.showToast("Data pendaftaran berhasil disimpan!", false);
             document.getElementById('signupForm').reset();
             window.switchView('loginView');
 
-        } catch (err) {
-            console.error("Verifikasi Error:", err);
-            window.showToast("Gagal memverifikasi kode ke server. Pastikan koneksi internet stabil.", true);
+        } catch (error) {
+            console.error("Signup Error:", error);
+            if (error.code === 'auth/email-already-in-use') {
+                window.showToast("Email sudah terdaftar, silakan login!", true);
+            } else if (error.code === 'auth/api-key-not-valid') {
+                window.showToast("API Key Firebase tidak valid. Harap perbarui kode Anda.", true);
+            } else {
+                window.showToast("Gagal menyimpan data: " + error.message, true);
+            }
         } finally {
             btnSignup.disabled = false;
             loader.classList.add('hidden');
@@ -733,24 +769,59 @@
 
     window.handleForgot = async function(e) {
         e.preventDefault();
-        window.showToast("Silakan hubungi administrator melalui tombol WhatsApp.", true);
+        const email = document.getElementById('forgotEmail').value;
+        const btnSubmit = document.querySelector('#forgotForm button[type="submit"]');
+        
+        if (!email) {
+            window.showToast("Masukkan alamat email Anda!", true);
+            return;
+        }
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<div class="loader !w-4 !h-4 !border-2"></div> MENGIRIM...';
+        
+        try {
+            await sendPasswordResetEmail(auth, email);
+            window.showToast(`Tautan reset password telah dikirim ke email: ${email}`, false);
+            document.getElementById('forgotForm').reset();
+            
+            setTimeout(() => {
+                window.switchView('loginView');
+            }, 3000);
+        } catch (error) {
+            console.error("Forgot Password Error:", error);
+            if (error.code === 'auth/user-not-found') {
+                window.showToast("Email tidak ditemukan di sistem kami.", true);
+            } else if (error.code === 'auth/api-key-not-valid') {
+                window.showToast("API Key Firebase tidak valid. Harap perbarui kode Anda.", true);
+            } else {
+                window.showToast("Gagal mengirim email reset sandi.", true);
+            }
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = 'KIRIM PROTOKOL';
+        }
     }
 
     window.handleLogout = async function() {
-        currentUser = null;
-        localStorage.removeItem('ms_currentUser');
-
-        document.getElementById('appContainer').classList.add('hidden');
-        document.getElementById('authContainer').classList.remove('hidden');
-        document.getElementById('loginForm').reset();
-        
-        window.resetWorkspace();
-        
-        setTimeout(() => {
-            document.getElementById('authContainer').classList.remove('opacity-0');
-        }, 50);
-        
-        window.showToast("Anda telah keluar.", false);
+        try {
+            await signOut(auth); 
+            currentCustomEmail = null; 
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            
+            window.resetWorkspace();
+            
+            setTimeout(() => {
+                document.getElementById('authContainer').classList.remove('opacity-0');
+            }, 50);
+            
+            window.showToast("Anda telah keluar.", false);
+        } catch (error) {
+            console.error("Logout Error:", error);
+            window.showToast("Gagal keluar aplikasi.", true);
+        }
     }
 
     window.toggleCustom = function(selectId, inputId) {
@@ -1106,19 +1177,17 @@
                 
                 window.showToast("Naskah berhasil dibuat!", false);
 
-                if (currentUser) {
+                if (currentUser && currentCustomEmail) {
                     try {
-                        let history = JSON.parse(localStorage.getItem('ms_history') || '[]');
-                        history.push({
-                            id: Date.now().toString(),
-                            email: currentUser,
+                        const historyRef = collection(db, 'users', currentUser.uid, 'scriptHistory');
+                        await addDoc(historyRef, {
+                            customEmail: currentCustomEmail,
                             title: title,
                             genre: genre,
                             scriptHTML: formattedHTML,
                             wordCount: wordCount,
                             createdAt: new Date().toISOString()
                         });
-                        localStorage.setItem('ms_history', JSON.stringify(history));
                     } catch(err) {
                         console.error("Gagal menyimpan riwayat:", err);
                     }
@@ -1292,15 +1361,15 @@
         document.getElementById('historyModal').classList.remove('hidden');
         document.getElementById('historyList').innerHTML = '<div class="loader mx-auto block mt-10"></div>';
 
-        if (!currentUser) {
-            document.getElementById('historyList').innerHTML = '<p class="text-red-500 text-center mt-5 text-sm font-bold">Harap login terlebih dahulu.</p>';
-            return;
-        }
+        if (!currentUser || !currentCustomEmail) return;
 
         try {
-            let history = JSON.parse(localStorage.getItem('ms_history') || '[]');
-            userHistory = history
-                .filter(item => item.email === currentUser)
+            const historyRef = collection(db, 'users', currentUser.uid, 'scriptHistory');
+            const snapshot = await getDocs(historyRef);
+            const allHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            userHistory = allHistory
+                .filter(item => item.customEmail === currentCustomEmail)
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             renderHistoryList();
@@ -1363,9 +1432,8 @@
 
     window.deleteHistoryItem = async function(id) {
         try {
-            let history = JSON.parse(localStorage.getItem('ms_history') || '[]');
-            history = history.filter(h => h.id !== id);
-            localStorage.setItem('ms_history', JSON.stringify(history));
+            const docRef = doc(db, 'users', currentUser.uid, 'scriptHistory', id);
+            await deleteDoc(docRef);
             
             userHistory = userHistory.filter(h => h.id !== id);
             renderHistoryList();
